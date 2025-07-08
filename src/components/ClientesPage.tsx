@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,7 +11,13 @@ import { useToast } from '@/hooks/use-toast';
 import { Tables } from '@/integrations/supabase/types';
 
 type Client = Tables<'clients'>;
-type ClientInsert = Tables<'clients', 'Insert'>;
+type ClientInsert = {
+  full_name: string;
+  cpf: string;
+  phone: string;
+  email?: string;
+  address: string;
+};
 
 export const ClientesPage = () => {
   const [clients, setClients] = useState<Client[]>([]);

@@ -77,7 +77,7 @@ export const RelatoriosPage = () => {
       const [salesCount, clientsCount, productsCount, revenueSum] = await Promise.all([
         supabase.from('sales').select('id', { count: 'exact' }),
         supabase.from('clients').select('id', { count: 'exact' }),
-        supabase.from('products').select('*').lt('stock_quantity', supabase.raw('min_stock')),
+        supabase.from('products').select('*').lt('stock_quantity', 'min_stock'),
         supabase.from('sales').select('final_amount').gte('sale_date', startDate.toISOString())
       ]);
 

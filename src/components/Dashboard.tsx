@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -81,7 +80,7 @@ export const Dashboard = () => {
       const { data: lowStockData } = await supabase
         .from('products')
         .select('*')
-        .lt('stock_quantity', supabase.raw('min_stock'));
+        .lt('stock_quantity', 'min_stock');
 
       // Fetch recent sales with client info
       const { data: recentSalesData } = await supabase
