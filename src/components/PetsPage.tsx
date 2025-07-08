@@ -12,6 +12,7 @@ import { PlusCircle, Search, Heart, Edit, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Tables } from '@/integrations/supabase/types';
+import { ImageUpload } from './ImageUpload';
 
 type Pet = Tables<'pets'>;
 type Client = Tables<'clients'>;
@@ -248,7 +249,7 @@ export const PetsPage = () => {
               Novo Pet
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingPet ? 'Editar Pet' : 'Novo Pet'}
@@ -256,6 +257,13 @@ export const PetsPage = () => {
             </DialogHeader>
             
             <form onSubmit={handleSubmit} className="space-y-4">
+              <ImageUpload
+                value={formData.photo_url}
+                onChange={(url) => setFormData({ ...formData, photo_url: url })}
+                bucket="pet-photos"
+                label="Foto do Pet"
+              />
+
               <div className="space-y-2">
                 <Label htmlFor="client_id">Cliente</Label>
                 <Select
@@ -398,6 +406,16 @@ export const PetsPage = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
+                {pet.photo_url && (
+                  <div className="flex justify-center">
+                    <img
+                      src={pet.photo_url}
+                      alt={pet.name}
+                      className="w-24 h-24 object-cover rounded-lg border"
+                    />
+                  </div>
+                )}
+
                 <div>
                   <p className="text-sm text-gray-600">Cliente</p>
                   <p className="font-medium">{pet.clients.full_name}</p>
