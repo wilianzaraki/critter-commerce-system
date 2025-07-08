@@ -16,6 +16,11 @@ import { Tables } from '@/integrations/supabase/types';
 type Pet = Tables<'pets'>;
 type Client = Tables<'clients'>;
 
+// Define the pet with client data type to match Supabase response
+type PetWithClient = Pet & {
+  clients: Client;
+};
+
 type PetInsert = {
   client_id: string;
   name: string;
@@ -28,7 +33,7 @@ type PetInsert = {
 };
 
 export const PetsPage = () => {
-  const [pets, setPets] = useState<(Pet & { client: Client })[]>([]);
+  const [pets, setPets] = useState<PetWithClient[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
