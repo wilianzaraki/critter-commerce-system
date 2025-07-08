@@ -74,17 +74,25 @@ export const RelatoriosPage = () => {
       setSalesData(chartData);
 
       // Fetch stats
-      const [salesCount, clientsCount, productsCount, revenueSum] = await Promise.all([
+      const [salesCount, clientsCount, revenueSum] = await Promise.all([
         supabase.from('sales').select('id', { count: 'exact' }),
         supabase.from('clients').select('id', { count: 'exact' }),
-        supabase.from('products').select('*').lt('stock_quantity', 'min_stock'),
         supabase.from('sales').select('final_amount').gte('sale_date', startDate.toISOString())
       ]);
+
+      // Get low stock products by comparing stock_quantity with min_stock
+      const { data: allProducts } = await supabase
+        .from('products')
+        .select('*');
+
+      const lowStockCount = allProducts?.filter(product => 
+        product.stock_quantity <= product.min_stock
+      ).length || 0;
 
       setStats({
         totalSales: salesCount.count || 0,
         totalClients: clientsCount.count || 0,
-        lowStockProducts: productsCount.data?.length || 0,
+        lowStockProducts: lowStockCount,
         totalRevenue: revenueSum.data?.reduce((sum, sale) => sum + Number(sale.final_amount), 0) || 0
       });
 
