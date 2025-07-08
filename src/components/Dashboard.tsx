@@ -1,79 +1,196 @@
 
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { 
-  Users, 
-  Heart, 
-  Package, 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer 
+} from 'recharts';
+import { 
   DollarSign, 
-  Calendar,
-  TrendingUp,
+  Users, 
+  Calendar, 
+  Package, 
+  TrendingUp, 
   AlertTriangle,
-  Activity
+  Eye
 } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { supabase } from '@/integrations/supabase/client';
+import { format, subDays, startOfDay } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
-const salesData = [
-  { name: 'Jan', vendas: 4000, servicos: 2400 },
-  { name: 'Fev', vendas: 3000, servicos: 1398 },
-  { name: 'Mar', vendas: 2000, servicos: 9800 },
-  { name: 'Abr', vendas: 2780, servicos: 3908 },
-  { name: 'Mai', vendas: 1890, servicos: 4800 },
-  { name: 'Jun', vendas: 2390, servicos: 3800 },
-];
-
-const recentAppointments = [
-  { id: 1, pet: 'Luna', owner: 'Maria Silva', service: 'Banho e Tosa', time: '09:00', status: 'Em andamento' },
-  { id: 2, pet: 'Max', owner: 'João Santos', service: 'Banho', time: '10:30', status: 'Agendado' },
-  { id: 3, pet: 'Bella', owner: 'Ana Costa', service: 'Tosa', time: '14:00', status: 'Agendado' },
-];
-
-const lowStockProducts = [
-  { name: 'Ração Golden Adulto', stock: 5, min: 10 },
-  { name: 'Shampoo Neutro', stock: 2, min: 5 },
-  { name: 'Antipulgas Bayer', stock: 3, min: 8 },
-];
+interface DashboardStats {
+  totalRevenue: number;
+  totalClients: number;
+  todayAppointments: number;
+  lowStockCount: number;
+  recentSales: any[];
+  upcomingAppointments: any[];
+  salesData: any[];
+  lowStockProducts: any[];
+}
 
 export const Dashboard = () => {
+  const [stats, setStats] = useState<DashboardStats>({
+    totalRevenue: 0,
+    totalClients: 0,
+    todayAppointments: 0,
+    lowStockCount: 0,
+    recentSales: [],
+    upcomingAppointments: [],
+    salesData: [],
+    lowStockProducts: []
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      const today = startOfDay(new Date());
+      const sevenDaysAgo = subDays(today, 7);
+
+      // Fetch total revenue from last 30 days
+      const { data: revenueData } = await supabase
+        .from('sales')
+        .select('final_amount')
+        .gte('sale_date', subDays(today, 30).toISOString());
+
+      const totalRevenue = revenueData?.reduce((sum, sale) => sum + Number(sale.final_amount), 0) || 0;
+
+      // Fetch total clients count
+      const { count: clientsCount } = await supabase
+        .from('clients')
+        .select('*', { count: 'exact', head: true });
+
+      // Fetch today's appointments
+      const { count: todayAppointmentsCount } = await supabase
+        .from('appointments')
+        .select('*', { count: 'exact', head: true })
+        .eq('appointment_date', format(today, 'yyyy-MM-dd'));
+
+      // Fetch low stock products
+      const { data: lowStockData } = await supabase
+        .from('products')
+        .select('*')
+        .lt('stock_quantity', supabase.raw('min_stock'));
+
+      // Fetch recent sales with client info
+      const { data: recentSalesData } = await supabase
+        .from('sales')
+        .select(`
+          *,
+          clients (full_name)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      // Fetch upcoming appointments with pet and client info
+      const { data: upcomingData } = await supabase
+        .from('appointments')
+        .select(`
+          *,
+          pets (name, clients (full_name)),
+          services (name)
+        `)
+        .gte('appointment_date', format(today, 'yyyy-MM-dd'))
+        .order('appointment_date')
+        .order('appointment_time')
+        .limit(5);
+
+      // Fetch sales data for chart (last 7 days)
+      const { data: salesChartData } = await supabase
+        .from('sales')
+        .select('sale_date, final_amount')
+        .gte('sale_date', sevenDaysAgo.toISOString())
+        .order('sale_date');
+
+      // Group sales by day for chart
+      const salesMap = new Map();
+      for (let i = 0; i < 7; i++) {
+        const date = subDays(new Date(), 6 - i);
+        const dateStr = format(date, 'dd/MM', { locale: ptBR });
+        salesMap.set(dateStr, 0);
+      }
+
+      salesChartData?.forEach(sale => {
+        const dateStr = format(new Date(sale.sale_date), 'dd/MM', { locale: ptBR });
+        if (salesMap.has(dateStr)) {
+          salesMap.set(dateStr, salesMap.get(dateStr) + Number(sale.final_amount));
+        }
+      });
+
+      const chartData = Array.from(salesMap.entries()).map(([date, amount]) => ({
+        date,
+        amount
+      }));
+
+      setStats({
+        totalRevenue,
+        totalClients: clientsCount || 0,
+        todayAppointments: todayAppointmentsCount || 0,
+        lowStockCount: lowStockData?.length || 0,
+        recentSales: recentSalesData || [],
+        upcomingAppointments: upcomingData || [],
+        salesData: chartData,
+        lowStockProducts: lowStockData || []
+      });
+
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+        <h1 className="text-3xl font-bold">Dashboard</h1>
         <p className="text-gray-600">Visão geral do seu petshop</p>
       </div>
 
-      {/* Cards de Métricas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Clientes</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">245</div>
-            <p className="text-xs text-muted-foreground">+12% em relação ao mês anterior</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pets Cadastrados</CardTitle>
-            <Heart className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">389</div>
-            <p className="text-xs text-muted-foreground">+8% em relação ao mês anterior</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Vendas do Mês</CardTitle>
+            <CardTitle className="text-sm font-medium">Receita (30 dias)</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">R$ 15.450</div>
-            <p className="text-xs text-muted-foreground">+18% em relação ao mês anterior</p>
+            <div className="text-2xl font-bold">R$ {stats.totalRevenue.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">
+              +12% em relação ao mês anterior
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Clientes</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalClients}</div>
+            <p className="text-xs text-muted-foreground">
+              Total de clientes cadastrados
+            </p>
           </CardContent>
         </Card>
 
@@ -83,91 +200,175 @@ export const Dashboard = () => {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12</div>
-            <p className="text-xs text-muted-foreground">6 concluídos, 6 pendentes</p>
+            <div className="text-2xl font-bold">{stats.todayAppointments}</div>
+            <p className="text-xs text-muted-foreground">
+              Serviços marcados para hoje
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Estoque Baixo</CardTitle>
+            <Package className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.lowStockCount}</div>
+            <p className="text-xs text-muted-foreground">
+              Produtos precisando reposição
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Gráficos */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Sales Chart */}
         <Card>
           <CardHeader>
-            <CardTitle>Vendas e Serviços (6 meses)</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Vendas dos Últimos 7 Dias
+            </CardTitle>
+            <CardDescription>
+              Receita diária do petshop
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={salesData}>
+              <BarChart data={stats.salesData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
+                <XAxis dataKey="date" />
                 <YAxis />
-                <Tooltip />
-                <Line type="monotone" dataKey="vendas" stroke="#3b82f6" strokeWidth={2} />
-                <Line type="monotone" dataKey="servicos" stroke="#10b981" strokeWidth={2} />
-              </LineChart>
+                <Tooltip 
+                  formatter={(value) => [`R$ ${Number(value).toFixed(2)}`, 'Vendas']}
+                />
+                <Bar dataKey="amount" fill="#3b82f6" />
+              </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
+        {/* Recent Sales */}
         <Card>
           <CardHeader>
-            <CardTitle>Produtos em Baixa no Estoque</CardTitle>
+            <CardTitle>Vendas Recentes</CardTitle>
+            <CardDescription>
+              Últimas transações realizadas
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {lowStockProducts.map((product, index) => (
-                <div key={index} className="flex items-center justify-between">
+            <div className="space-y-3">
+              {stats.recentSales.map((sale) => (
+                <div key={sale.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div>
-                    <p className="font-medium">{product.name}</p>
-                    <p className="text-sm text-gray-500">Mínimo: {product.min} unidades</p>
+                    <div className="font-medium">
+                      {sale.clients?.full_name || 'Cliente não identificado'}
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      {format(new Date(sale.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <AlertTriangle className="h-4 w-4 text-red-500" />
-                    <span className="font-bold text-red-600">{product.stock}</span>
+                  <div className="text-right">
+                    <div className="font-bold text-green-600">
+                      R$ {Number(sale.final_amount).toFixed(2)}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {sale.payment_method || 'N/A'}
+                    </div>
                   </div>
                 </div>
               ))}
+              {stats.recentSales.length === 0 && (
+                <div className="text-center py-6 text-gray-500">
+                  Nenhuma venda recente
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
-      </div>
 
-      {/* Agendamentos Recentes */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Agendamentos de Hoje</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {recentAppointments.map((appointment) => (
-              <div key={appointment.id} className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex items-center space-x-4">
-                  <div className="bg-blue-100 p-2 rounded-full">
-                    <Heart className="h-4 w-4 text-blue-600" />
-                  </div>
+        {/* Upcoming Appointments */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Próximos Agendamentos</CardTitle>
+            <CardDescription>
+              Serviços agendados
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {stats.upcomingAppointments.map((appointment) => (
+                <div key={appointment.id} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
                   <div>
-                    <p className="font-medium">{appointment.pet}</p>
-                    <p className="text-sm text-gray-500">{appointment.owner}</p>
+                    <div className="font-medium">
+                      {appointment.pets?.name} - {appointment.pets?.clients?.full_name}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {appointment.services?.name}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-medium">
+                      {format(new Date(appointment.appointment_date), 'dd/MM', { locale: ptBR })}
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      {appointment.appointment_time}
+                    </div>
                   </div>
                 </div>
-                <div className="text-center">
-                  <p className="font-medium">{appointment.service}</p>
-                  <p className="text-sm text-gray-500">{appointment.time}</p>
+              ))}
+              {stats.upcomingAppointments.length === 0 && (
+                <div className="text-center py-6 text-gray-500">
+                  Nenhum agendamento próximo
                 </div>
-                <div>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    appointment.status === 'Em andamento' 
-                      ? 'bg-yellow-100 text-yellow-800' 
-                      : 'bg-green-100 text-green-800'
-                  }`}>
-                    {appointment.status}
-                  </span>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Low Stock Alert */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-orange-500" />
+              Produtos com Estoque Baixo
+            </CardTitle>
+            <CardDescription>
+              Produtos que precisam de reposição
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {stats.lowStockProducts.slice(0, 5).map((product) => (
+                <div key={product.id} className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
+                  <div>
+                    <div className="font-medium">{product.name}</div>
+                    <div className="text-sm text-gray-600">{product.brand}</div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="destructive">
+                      {product.stock_quantity} restante{product.stock_quantity !== 1 ? 's' : ''}
+                    </Badge>
+                  </div>
                 </div>
+              ))}
+              {stats.lowStockProducts.length === 0 && (
+                <div className="text-center py-6 text-green-600">
+                  ✓ Todos os produtos com estoque adequado
+                </div>
+              )}
+            </div>
+            {stats.lowStockProducts.length > 5 && (
+              <div className="pt-3 border-t">
+                <Button variant="outline" className="w-full">
+                  <Eye className="mr-2 h-4 w-4" />
+                  Ver todos ({stats.lowStockProducts.length})
+                </Button>
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
