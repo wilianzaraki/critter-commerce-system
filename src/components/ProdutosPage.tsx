@@ -426,26 +426,10 @@ export const ProdutosPage = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredProducts.map((product) => (
-          <Card key={product.id} className={product.stock_quantity <= product.min_stock ? 'border-orange-200' : ''}>
+          <Card key={product.id}>
             <CardHeader>
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    {product.name}
-                    {product.stock_quantity === 0 && (
-                      <Badge variant="destructive">Sem estoque</Badge>
-                    )}
-                    {product.stock_quantity > 0 && product.stock_quantity <= product.min_stock && (
-                      <Badge variant="secondary" className="bg-orange-100 text-orange-800">
-                        <AlertTriangle className="h-3 w-3 mr-1" />
-                        Baixo
-                      </Badge>
-                    )}
-                  </CardTitle>
-                  {product.brand && (
-                    <p className="text-sm text-gray-600">{product.brand}</p>
-                  )}
-                </div>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg">{product.name}</CardTitle>
                 <div className="flex space-x-1">
                   <Button variant="ghost" size="sm" onClick={() => handleEdit(product)}>
                     <Edit className="h-4 w-4" />
@@ -462,7 +446,7 @@ export const ProdutosPage = () => {
                   <img
                     src={product.image_url}
                     alt={product.name}
-                    className="w-full h-32 object-cover rounded-lg"
+                    className="w-16 h-16 object-cover rounded-md float-right ml-3"
                   />
                 )}
 

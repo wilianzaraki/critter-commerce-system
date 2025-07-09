@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -390,10 +389,7 @@ export const PetsPage = () => {
           <Card key={pet.id}>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <span className="text-2xl">{getSpeciesIcon(pet.species)}</span>
-                  {pet.name}
-                </CardTitle>
+                <CardTitle className="text-lg">{pet.name}</CardTitle>
                 <div className="flex space-x-1">
                   <Button variant="ghost" size="sm" onClick={() => handleEdit(pet)}>
                     <Edit className="h-4 w-4" />
@@ -407,13 +403,11 @@ export const PetsPage = () => {
             <CardContent>
               <div className="space-y-3">
                 {pet.photo_url && (
-                  <div className="flex justify-center">
-                    <img
-                      src={pet.photo_url}
-                      alt={pet.name}
-                      className="w-24 h-24 object-cover rounded-lg border"
-                    />
-                  </div>
+                  <img
+                    src={pet.photo_url}
+                    alt={pet.name}
+                    className="w-16 h-16 object-cover rounded-full float-right ml-3"
+                  />
                 )}
 
                 <div>

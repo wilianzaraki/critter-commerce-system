@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { PlusCircle, Search, Scissors, Edit, Trash2, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Tables } from '@/integrations/supabase/types';
+import { Tables } from '@/integrations/supabase';
 import { ImageUpload } from '@/components/ImageUpload';
 
 type Service = Tables<'services'>;
@@ -355,7 +356,7 @@ export const ServicosPage = () => {
                   <img
                     src={service.image_url}
                     alt={service.name}
-                    className="w-full h-32 object-cover rounded-lg"
+                    className="w-16 h-16 object-cover rounded-md float-right ml-3"
                   />
                 )}
 

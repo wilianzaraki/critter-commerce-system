@@ -394,6 +394,7 @@ export type Database = {
           description: string | null
           duration_minutes: number | null
           id: string
+          image_url: string | null
           name: string
           service_type: Database["public"]["Enums"]["service_type"]
         }
@@ -403,6 +404,7 @@ export type Database = {
           description?: string | null
           duration_minutes?: number | null
           id?: string
+          image_url?: string | null
           name: string
           service_type: Database["public"]["Enums"]["service_type"]
         }
@@ -412,6 +414,7 @@ export type Database = {
           description?: string | null
           duration_minutes?: number | null
           id?: string
+          image_url?: string | null
           name?: string
           service_type?: Database["public"]["Enums"]["service_type"]
         }
