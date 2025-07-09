@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { PlusCircle, Search, Scissors, Edit, Trash2, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Tables } from '@/integrations/supabase';
+import { Tables } from '@/integrations/supabase/types';
 import { ImageUpload } from '@/components/ImageUpload';
 
 type Service = Tables<'services'>;
