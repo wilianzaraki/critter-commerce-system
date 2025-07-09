@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +11,7 @@ import { PlusCircle, Search, Scissors, Edit, Trash2, Clock } from 'lucide-react'
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Tables } from '@/integrations/supabase/types';
+import { ImageUpload } from '@/components/ImageUpload';
 
 type Service = Tables<'services'>;
 
@@ -21,6 +21,7 @@ type ServiceInsert = {
   base_price: number;
   duration_minutes?: number;
   description?: string;
+  image_url?: string;
 };
 
 export const ServicosPage = () => {
@@ -37,7 +38,8 @@ export const ServicosPage = () => {
     service_type: 'banho',
     base_price: 0,
     duration_minutes: 60,
-    description: ''
+    description: '',
+    image_url: ''
   });
 
   useEffect(() => {
@@ -116,7 +118,8 @@ export const ServicosPage = () => {
       service_type: service.service_type,
       base_price: Number(service.base_price),
       duration_minutes: service.duration_minutes || 60,
-      description: service.description || ''
+      description: service.description || '',
+      image_url: service.image_url || ''
     });
     setIsDialogOpen(true);
   };
@@ -153,7 +156,8 @@ export const ServicosPage = () => {
       service_type: 'banho',
       base_price: 0,
       duration_minutes: 60,
-      description: ''
+      description: '',
+      image_url: ''
     });
   };
 
@@ -222,6 +226,13 @@ export const ServicosPage = () => {
             </DialogHeader>
             
             <form onSubmit={handleSubmit} className="space-y-4">
+              <ImageUpload
+                value={formData.image_url}
+                onChange={(url) => setFormData({ ...formData, image_url: url })}
+                bucket="service-photos"
+                label="Foto do Serviço"
+              />
+
               <div className="space-y-2">
                 <Label htmlFor="name">Nome do Serviço</Label>
                 <Input
@@ -340,6 +351,14 @@ export const ServicosPage = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
+                {service.image_url && (
+                  <img
+                    src={service.image_url}
+                    alt={service.name}
+                    className="w-full h-32 object-cover rounded-lg"
+                  />
+                )}
+
                 <div className="flex justify-between items-center">
                   <span className="text-2xl font-bold text-green-600">
                     R$ {Number(service.base_price).toFixed(2)}
