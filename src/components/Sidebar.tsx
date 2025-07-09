@@ -11,9 +11,11 @@ import {
   BarChart3, 
   Settings,
   Scissors,
-  PawPrint
+  PawPrint,
+  Shield
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useUserRole } from '@/hooks/useUserRole';
 
 const menuItems = [
   { icon: Home, label: 'Dashboard', path: '/' },
@@ -27,7 +29,15 @@ const menuItems = [
   { icon: Settings, label: 'Configurações', path: '/configuracoes' },
 ];
 
+const adminMenuItems = [
+  { icon: Shield, label: 'Administração', path: '/admin' },
+];
+
 export const Sidebar = () => {
+  const { isAdmin } = useUserRole();
+
+  const allMenuItems = isAdmin ? [...menuItems, ...adminMenuItems] : menuItems;
+
   return (
     <div className="w-64 bg-white shadow-lg border-r border-gray-200">
       <div className="p-6 border-b border-gray-200">
@@ -43,7 +53,7 @@ export const Sidebar = () => {
       </div>
       
       <nav className="mt-6 px-3">
-        {menuItems.map((item) => (
+        {allMenuItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}

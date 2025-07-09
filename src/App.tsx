@@ -17,6 +17,7 @@ import { ServicosPage } from "@/components/ServicosPage";
 import { AgendamentosPage } from "@/components/AgendamentosPage";
 import { VendasPage } from "@/components/VendasPage";
 import { RelatoriosPage } from "@/components/RelatoriosPage";
+import { AdminPage } from "@/components/AdminPage";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
@@ -74,6 +75,7 @@ const App = () => {
                 <Route path="agendamentos" element={<AgendamentosPage />} />
                 <Route path="vendas" element={<VendasPage />} />
                 <Route path="relatorios" element={<RelatoriosPage />} />
+                <Route path="admin" element={<AdminPage />} />
                 <Route path="*" element={<NotFound />} />
               </Route>
             )}

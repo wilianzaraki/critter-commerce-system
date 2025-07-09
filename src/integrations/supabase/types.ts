@@ -117,6 +117,47 @@ export type Database = {
         }
         Relationships: []
       }
+      employee_invites: {
+        Row: {
+          created_at: string
+          email: string
+          expires_at: string
+          full_name: string
+          id: string
+          invite_token: string
+          invited_by: string
+          used: boolean | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          expires_at?: string
+          full_name: string
+          id?: string
+          invite_token: string
+          invited_by: string
+          used?: boolean | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          expires_at?: string
+          full_name?: string
+          id?: string
+          invite_token?: string
+          invited_by?: string
+          used?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_invites_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pets: {
         Row: {
           age: number | null
@@ -476,6 +517,10 @@ export type Database = {
       get_user_role: {
         Args: { user_id: string }
         Returns: Database["public"]["Enums"]["user_role"]
+      }
+      is_admin: {
+        Args: { user_id?: string }
+        Returns: boolean
       }
     }
     Enums: {
