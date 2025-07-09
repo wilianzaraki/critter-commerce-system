@@ -34,7 +34,9 @@ const adminMenuItems = [
 ];
 
 export const Sidebar = () => {
-  const { isAdmin } = useUserRole();
+  const { isAdmin, loading } = useUserRole();
+
+  console.log('Sidebar render:', { isAdmin, loading });
 
   const allMenuItems = isAdmin ? [...menuItems, ...adminMenuItems] : menuItems;
 
@@ -70,6 +72,12 @@ export const Sidebar = () => {
             <span>{item.label}</span>
           </NavLink>
         ))}
+        
+        {loading && (
+          <div className="px-3 py-2 text-xs text-gray-500">
+            Verificando permissões...
+          </div>
+        )}
       </nav>
     </div>
   );

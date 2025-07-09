@@ -15,6 +15,8 @@ export const useUserRole = () => {
         const { data: { user } } = await supabase.auth.getUser();
         
         if (user) {
+          console.log('User authenticated:', user.id);
+          
           const { data, error } = await supabase
             .from('profiles')
             .select('role')
@@ -24,8 +26,11 @@ export const useUserRole = () => {
           if (error) {
             console.error('Error fetching user role:', error);
           } else {
+            console.log('User role fetched:', data.role);
             setRole(data.role);
           }
+        } else {
+          console.log('No authenticated user');
         }
       } catch (error) {
         console.error('Error getting user role:', error);
@@ -35,7 +40,16 @@ export const useUserRole = () => {
     };
 
     getUserRole();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+      getUserRole();
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
+
+  console.log('useUserRole state:', { role, loading, isAdmin: role === 'admin' });
 
   return { role, loading, isAdmin: role === 'admin' };
 };
