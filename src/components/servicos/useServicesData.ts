@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useUserRole } from '@/hooks/useUserRole';
 import { Tables } from '@/integrations/supabase/types';
 
 type Service = Tables<'services'>;
@@ -20,7 +19,6 @@ export const useServicesData = () => {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-  const { isAdmin } = useUserRole();
 
   const fetchServices = async () => {
     try {
@@ -43,15 +41,6 @@ export const useServicesData = () => {
   };
 
   const saveService = async (formData: ServiceInsert, editingService?: Service) => {
-    if (!isAdmin) {
-      toast({
-        title: "Acesso negado",
-        description: "Apenas administradores podem gerenciar serviços.",
-        variant: "destructive",
-      });
-      return false;
-    }
-
     setLoading(true);
 
     try {
@@ -95,15 +84,6 @@ export const useServicesData = () => {
   };
 
   const deleteService = async (serviceId: string) => {
-    if (!isAdmin) {
-      toast({
-        title: "Acesso negado",
-        description: "Apenas administradores podem excluir serviços.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     if (!confirm('Tem certeza que deseja excluir este serviço?')) return;
 
     try {
@@ -139,6 +119,6 @@ export const useServicesData = () => {
     saveService,
     deleteService,
     fetchServices,
-    canManage: isAdmin
+    canManage: true // Agora todos podem gerenciar serviços
   };
 };
