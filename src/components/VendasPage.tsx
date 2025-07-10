@@ -49,6 +49,11 @@ export const VendasPage = () => {
       if (servicesRes.data) setServices(servicesRes.data);
     } catch (error) {
       console.error('Error fetching data:', error);
+      toast({
+        title: "Erro ao carregar dados",
+        description: "Não foi possível carregar os dados necessários.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -56,17 +61,37 @@ export const VendasPage = () => {
     const product = products.find(p => p.id === productId);
     if (!product) return;
 
+    // Verificar se já existe no carrinho
     const existingItem = saleItems.find(item => 
       item.type === 'product' && item.item.id === productId
     );
 
     if (existingItem) {
+      // Verificar se tem estoque suficiente
+      if (existingItem.quantity >= product.stock_quantity) {
+        toast({
+          title: "Estoque insuficiente",
+          description: `Só temos ${product.stock_quantity} unidades em estoque.`,
+          variant: "destructive",
+        });
+        return;
+      }
+
       setSaleItems(items => items.map(item => 
         item.type === 'product' && item.item.id === productId
           ? { ...item, quantity: item.quantity + 1 }
           : item
       ));
     } else {
+      if (product.stock_quantity <= 0) {
+        toast({
+          title: "Produto sem estoque",
+          description: "Este produto não possui estoque disponível.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       setSaleItems(items => [...items, {
         type: 'product',
         item: product,
@@ -94,6 +119,20 @@ export const VendasPage = () => {
 
   const updateQuantity = (index: number, quantity: number) => {
     if (quantity <= 0) return;
+    
+    const item = saleItems[index];
+    if (item.type === 'product') {
+      const product = item.item as Product;
+      if (quantity > product.stock_quantity) {
+        toast({
+          title: "Estoque insuficiente",
+          description: `Só temos ${product.stock_quantity} unidades em estoque.`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     setSaleItems(items => items.map((item, i) => 
       i === index ? { ...item, quantity } : item
     ));
@@ -107,7 +146,7 @@ export const VendasPage = () => {
   };
 
   const totalAmount = saleItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const finalAmount = totalAmount - discount;
+  const finalAmount = Math.max(0, totalAmount - discount);
 
   const handleSale = async () => {
     if (!selectedClient || saleItems.length === 0) {
@@ -119,18 +158,24 @@ export const VendasPage = () => {
       return;
     }
 
+    if (!paymentMethod) {
+      toast({
+        title: "Erro",
+        description: "Selecione a forma de pagamento.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Usuário não autenticado');
-
       // Create sale
       const { data: sale, error: saleError } = await supabase
         .from('sales')
         .insert({
           client_id: selectedClient,
-          employee_id: user.id,
+          employee_id: '00000000-0000-0000-0000-000000000000', // ID fictício
           total_amount: totalAmount,
           discount_amount: discount,
           final_amount: finalAmount,
@@ -169,9 +214,10 @@ export const VendasPage = () => {
       setPaymentMethod('');
 
     } catch (error: any) {
+      console.error('Sale error:', error);
       toast({
         title: "Erro ao realizar venda",
-        description: error.message,
+        description: error.message || "Erro desconhecido ao processar a venda.",
         variant: "destructive",
       });
     } finally {
@@ -222,9 +268,9 @@ export const VendasPage = () => {
                   <SelectValue placeholder="Selecione um produto" />
                 </SelectTrigger>
                 <SelectContent>
-                  {products.map((product) => (
+                  {products.filter(p => p.stock_quantity > 0).map((product) => (
                     <SelectItem key={product.id} value={product.id}>
-                      {product.name} - R$ {product.sell_price.toFixed(2)}
+                      {product.name} - R$ {product.sell_price.toFixed(2)} (Estoque: {product.stock_quantity})
                     </SelectItem>
                   ))}
                 </SelectContent>

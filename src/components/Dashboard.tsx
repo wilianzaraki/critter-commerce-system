@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +24,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { format, subDays, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { TestDataSeeder } from './TestDataSeeder';
 
 interface DashboardStats {
   totalRevenue: number;
@@ -47,6 +49,7 @@ export const Dashboard = () => {
     lowStockProducts: []
   });
   const [loading, setLoading] = useState(true);
+  const [showTestData, setShowTestData] = useState(false);
 
   useEffect(() => {
     fetchDashboardData();
@@ -76,11 +79,14 @@ export const Dashboard = () => {
         .select('*', { count: 'exact', head: true })
         .eq('appointment_date', format(today, 'yyyy-MM-dd'));
 
-      // Fetch low stock products
-      const { data: lowStockData } = await supabase
+      // Fetch all products to check low stock
+      const { data: allProducts } = await supabase
         .from('products')
-        .select('*')
-        .lt('stock_quantity', 'min_stock');
+        .select('*');
+
+      const lowStockProducts = allProducts?.filter(product => 
+        product.stock_quantity <= product.min_stock
+      ) || [];
 
       // Fetch recent sales with client info
       const { data: recentSalesData } = await supabase
@@ -129,18 +135,18 @@ export const Dashboard = () => {
 
       const chartData = Array.from(salesMap.entries()).map(([date, amount]) => ({
         date,
-        amount
+        amount: Number(amount.toFixed(2))
       }));
 
       setStats({
         totalRevenue,
         totalClients: clientsCount || 0,
         todayAppointments: todayAppointmentsCount || 0,
-        lowStockCount: lowStockData?.length || 0,
+        lowStockCount: lowStockProducts.length,
         recentSales: recentSalesData || [],
         upcomingAppointments: upcomingData || [],
         salesData: chartData,
-        lowStockProducts: lowStockData || []
+        lowStockProducts: lowStockProducts
       });
 
     } catch (error) {
@@ -160,10 +166,25 @@ export const Dashboard = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <p className="text-gray-600">Visão geral do seu petshop</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Dashboard</h1>
+          <p className="text-gray-600">Visão geral do seu petshop</p>
+        </div>
+        
+        <Button 
+          onClick={() => setShowTestData(!showTestData)}
+          variant="outline"
+        >
+          {showTestData ? 'Esconder' : 'Mostrar'} Dados de Teste
+        </Button>
       </div>
+
+      {showTestData && (
+        <div className="mb-6">
+          <TestDataSeeder />
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -175,7 +196,7 @@ export const Dashboard = () => {
           <CardContent>
             <div className="text-2xl font-bold">R$ {stats.totalRevenue.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">
-              +12% em relação ao mês anterior
+              Receita dos últimos 30 dias
             </p>
           </CardContent>
         </Card>
