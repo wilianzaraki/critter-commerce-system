@@ -4,28 +4,24 @@ import { NavLink } from 'react-router-dom';
 import { 
   Home, 
   Users, 
-  Heart, 
   Package, 
   Calendar, 
   ShoppingCart, 
   BarChart3, 
   Settings,
   Scissors,
-  PawPrint,
-  Shield
+  PawPrint
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const menuItems = [
   { icon: Home, label: 'Dashboard', path: '/' },
-  { icon: Users, label: 'Clientes', path: '/clientes' },
-  { icon: Heart, label: 'Pets', path: '/pets' },
+  { icon: Users, label: 'Clientes & Pets', path: '/clientes' },
   { icon: Package, label: 'Produtos', path: '/produtos' },
   { icon: Scissors, label: 'Serviços', path: '/servicos' },
   { icon: Calendar, label: 'Agendamentos', path: '/agendamentos' },
   { icon: ShoppingCart, label: 'Vendas', path: '/vendas' },
   { icon: BarChart3, label: 'Relatórios', path: '/relatorios' },
-  { icon: Shield, label: 'Administração', path: '/admin' },
   { icon: Settings, label: 'Configurações', path: '/configuracoes' },
 ];
 
