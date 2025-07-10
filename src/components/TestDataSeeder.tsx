@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -149,21 +148,21 @@ export const TestDataSeeder = () => {
       const services = [
         {
           name: 'Banho Simples',
-          service_type: 'banho',
+          service_type: 'banho' as const,
           base_price: 35.00,
           duration_minutes: 45,
           description: 'Banho com shampoo neutro e secagem'
         },
         {
           name: 'Tosa Completa',
-          service_type: 'tosa',
+          service_type: 'tosa' as const,
           base_price: 60.00,
           duration_minutes: 90,
           description: 'Tosa completa com acabamento profissional'
         },
         {
           name: 'Banho e Tosa Premium',
-          service_type: 'banho_tosa',
+          service_type: 'banho_tosa' as const,
           base_price: 85.00,
           duration_minutes: 120,
           description: 'Serviço completo de banho e tosa com hidratação'
